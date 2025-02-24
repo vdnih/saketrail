@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'article_service.dart';
+import 'article_detail_page.dart';
 
 class ArticleListPage extends StatefulWidget {
   const ArticleListPage({super.key});
@@ -48,6 +49,13 @@ class _ArticleListPageState extends State<ArticleListPage> {
                   title: Text(article['title']),
                   subtitle: Text(article['category']['name']),
                   onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ArticleDetailPage(article: article),
+                      ),
+                    );
                     // 記事詳細ページへのナビゲーションなど
                   },
                 );
