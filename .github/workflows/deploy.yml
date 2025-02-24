@@ -30,7 +30,7 @@ jobs:
       run: flutter build web --release
 
     - name: Set up AWS OIDC credentials
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::597088033984:role/github-oicd-role-for-sakeflow  # 作成したIAMロールのARN
         role-session-name: GitHubActions
