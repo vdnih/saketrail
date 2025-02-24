@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share/share.dart';
 import 'article_service.dart';
 import 'article_detail_page.dart';
 
@@ -18,11 +19,23 @@ class _ArticleListPageState extends State<ArticleListPage> {
     _articles = ArticleService.fetchArticles();
   }
 
+  void _shareContent(String title, String url) {
+    Share.share('$title\n$url');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('お酒に関する記事'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: () {
+              _shareContent('SakeFlow', 'https://example.com');
+            },
+          ),
+        ],
       ),
       body: FutureBuilder<List<dynamic>>(
         future: _articles,
@@ -56,7 +69,6 @@ class _ArticleListPageState extends State<ArticleListPage> {
                             ArticleDetailPage(article: article),
                       ),
                     );
-                    // 記事詳細ページへのナビゲーションなど
                   },
                 );
               },
