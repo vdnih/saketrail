@@ -1,0 +1,12 @@
+name: saketrail
+description: A simple app to track drinks.
+
+environment:
+  sdk: '^3.7.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  image_picker: ^1.1.2
+
+# 他の依存関係や設定があればここに追加
