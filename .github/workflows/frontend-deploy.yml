@@ -15,7 +15,7 @@ on:
 env:
   AWS_REGION: ap-northeast-1
   # STAGING_BUCKET: staging-saketrail-frontend  # stagingは未使用
-  PRODUCTION_BUCKET: saketrail-frontend
+  PRODUCTION_BUCKET: production-saketrail-frontend
 
 permissions:
   id-token: write
