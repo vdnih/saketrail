@@ -1,0 +1,12 @@
+# 開発環境共通設定
+environment: dev
+domain: dev.saketrail.com
+aws:
+  region: ap-northeast-1
+  account_id: "${AWS_ACCOUNT_ID}"  # 環境変数から取得
+
+# 共通タグ
+tags:
+  Environment: dev
+  Project: saketrail
+  ManagedBy: cdk 

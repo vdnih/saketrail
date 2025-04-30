@@ -3,8 +3,6 @@ from aws_cdk import (
     aws_s3 as s3,
     aws_cloudfront as cloudfront,
     aws_cloudfront_origins as origins,
-    aws_route53 as route53,
-    aws_route53_targets as targets,
     aws_certificatemanager as acm,
     RemovalPolicy,
     CfnOutput,
@@ -21,7 +19,7 @@ class FrontendStack(Stack):
         *,
         environment: str,
         domain_name: str,
-        hosted_zone_id: str,
+        certificate_arn: str,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -29,21 +27,9 @@ class FrontendStack(Stack):
         # Create subdomain based on environment
         subdomain = f"staging.{domain_name}" if environment == "staging" else domain_name
 
-        # Import existing hosted zone
-        hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
-            self,
-            "HostedZone",
-            hosted_zone_id=hosted_zone_id,
-            zone_name=domain_name,
-        )
-
-        # Create SSL certificate
-        certificate = acm.DnsValidatedCertificate(
-            self,
-            "Certificate",
-            domain_name=subdomain,
-            hosted_zone=hosted_zone,
-            region="us-east-1",  # CloudFront requires certificates in us-east-1
+        # Create SSL certificate (DNS validation, manual CNAME)
+        certificate = acm.Certificate.from_certificate_arn(
+            self, "Certificate", certificate_arn
         )
 
         # Create S3 bucket for static website hosting
@@ -77,23 +63,19 @@ class FrontendStack(Stack):
             ],
         )
 
-        # Create Route 53 alias record
-        route53.ARecord(
-            self,
-            "AliasRecord",
-            zone=hosted_zone,
-            target=route53.RecordTarget.from_alias(
-                targets.CloudFrontTarget(distribution)
-            ),
-            record_name=subdomain,
-        )
-
-        # Output the distribution ID and bucket name
+        # Output the distribution ID, domain name, bucket name, and ACM validation info
         CfnOutput(
             self,
             "DistributionId",
             value=distribution.distribution_id,
             description="CloudFront Distribution ID",
+        )
+
+        CfnOutput(
+            self,
+            "DistributionDomainName",
+            value=distribution.distribution_domain_name,
+            description="CloudFront Distribution Domain Name",
         )
 
         CfnOutput(
