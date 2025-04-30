@@ -1,9 +1,8 @@
 # NOTE:
-# このワークフローはフロントエンド資材（静的Web）のみをCI/CDでS3/CloudFrontにデプロイします。
-# AWS CDKによるインフラ構築・変更はCI/CDからは実施しません（権限リスク回避のため手動運用）。
+# このワークフローはProduction環境のみを対象とし、mainブランチpush時にフロントエンド資材をS3/CloudFrontにデプロイします。
+# staging環境は現時点では利用しないため、関連設定はコメントアウトしています。
+# AWS CDKによるインフラ構築・変更はCI/CDからは実施しません。
 # AWSへの認証はGitHub Actions OIDC + IAMロールで行います。
-#
-# Lambda資材のデプロイも同様にCI/CDで行い、CDKはCI/CDから除外してください。
 
 name: Frontend Deploy
 
@@ -12,16 +11,10 @@ on:
     branches: [ main ]
     paths:
       - 'frontend/**'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'frontend/**'
-  release:
-    types: [created]
 
 env:
   AWS_REGION: ap-northeast-1
-  STAGING_BUCKET: staging-saketrail-frontend
+  # STAGING_BUCKET: staging-saketrail-frontend  # stagingは未使用
   PRODUCTION_BUCKET: saketrail-frontend
 
 permissions:
@@ -58,18 +51,12 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # Deploy to staging on main branch push
-      - name: Deploy to staging
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        working-directory: ./frontend/build/web
-        run: |
-          aws s3 sync . s3://${{ env.STAGING_BUCKET }} --delete
-          aws cloudfront create-invalidation --distribution-id ${{ secrets.STAGING_DISTRIBUTION_ID }} --paths "/*"
-
-      # Deploy to production on release
+      # Productionデプロイのみ有効
       - name: Deploy to production
-        if: github.event_name == 'release'
         working-directory: ./frontend/build/web
         run: |
           aws s3 sync . s3://${{ env.PRODUCTION_BUCKET }} --delete
-          aws cloudfront create-invalidation --distribution-id ${{ secrets.PRODUCTION_DISTRIBUTION_ID }} --paths "/*" 
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.PRODUCTION_DISTRIBUTION_ID }} --paths "/*"
+      # - name: Deploy to staging
+      #   if: false  # stagingは未使用
+      #   run: echo "staging deploy is disabled" 

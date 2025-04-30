@@ -1,6 +1,7 @@
 # NOTE:
-# このワークフローはLambda関数のデプロイのみをCI/CDで実施します。
-# AWS CDKによるインフラ構築・変更はCI/CDからは実施しません（権限リスク回避のため手動運用）。
+# このワークフローはProduction環境のLambda関数のみをCI/CDでデプロイします。
+# staging環境は現時点では利用しないため、関連設定はコメントアウトしています。
+# AWS CDKによるインフラ構築・変更はCI/CDからは実施しません。
 # AWSへの認証はGitHub Actions OIDC + IAMロールで行います。
 
 name: Lambda Deploy
@@ -10,17 +11,12 @@ on:
     branches: [ main ]
     paths:
       - 'lambda/**'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'lambda/**'
-  release:
-    types: [created]
 
 env:
   AWS_REGION: ap-northeast-1
   LAMBDA_FUNCTION_NAME: <your-lambda-function-name>
   LAMBDA_ZIP_PATH: lambda/dist/lambda.zip
+  # STAGING_LAMBDA_FUNCTION_NAME: <your-staging-lambda-function-name>  # stagingは未使用
 
 permissions:
   id-token: write
@@ -45,8 +41,11 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Update Lambda function code
+      - name: Update Lambda function code (production)
         run: |
           aws lambda update-function-code \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
-            --zip-file fileb://${{ env.LAMBDA_ZIP_PATH }} 
+            --zip-file fileb://${{ env.LAMBDA_ZIP_PATH }}
+      # - name: Update Lambda function code (staging)
+      #   if: false  # stagingは未使用
+      #   run: echo "staging lambda deploy is disabled" 

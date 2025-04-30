@@ -6,13 +6,15 @@ from saketrail_cdk.stacks.frontend_stack import FrontendStack
 
 app = App()
 
-# 設定ファイルの読み込み
-def load_config():
-    config_path = os.path.join(os.path.dirname(__file__), '../config/dev/frontend.yml')
+def load_config(env_name):
+    config_path = os.path.join(os.path.dirname(__file__), f'../config/{env_name}/frontend.yml')
     with open(config_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
-config = load_config()
+# dev環境
+config_dev = load_config('dev')
+# prod環境
+config_prod = load_config('prod')
 
 env = Environment(
     account=os.getenv("CDK_DEFAULT_ACCOUNT"),
@@ -23,8 +25,17 @@ FrontendStack(
     app,
     "SakeTrailFrontendDev",
     environment="dev",
-    domain_name=config["domain"],
-    certificate_arn=config["certificate_arn"],
+    domain_name=config_dev["domain"],
+    certificate_arn=config_dev["certificate_arn"],
+    env=env,
+)
+
+FrontendStack(
+    app,
+    "SakeTrailFrontendProduction",
+    environment="production",
+    domain_name=config_prod["domain"],
+    certificate_arn=config_prod["certificate_arn"],
     env=env,
 )
 
