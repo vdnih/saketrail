@@ -1,3 +1,10 @@
+# NOTE:
+# このワークフローはフロントエンド資材（静的Web）のみをCI/CDでS3/CloudFrontにデプロイします。
+# AWS CDKによるインフラ構築・変更はCI/CDからは実施しません（権限リスク回避のため手動運用）。
+# AWSへの認証はGitHub Actions OIDC + IAMロールで行います。
+#
+# Lambda資材のデプロイも同様にCI/CDで行い、CDKはCI/CDから除外してください。
+
 name: Frontend Deploy
 
 on:

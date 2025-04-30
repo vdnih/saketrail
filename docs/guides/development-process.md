@@ -124,4 +124,20 @@ SakeTrailプロジェクトでは、以下の開発方針に従って開発を�
 
 - [コーディング規約](./coding-standards.md)
 - [テストガイドライン](./testing.md)
-- [アーキテクチャ概要](../architecture/overview.md) 
+- [アーキテクチャ概要](../architecture/overview.md)
+
+## GitHub Actions OIDC用IAMロール作成手順
+
+1. AWSマネジメントコンソールでIAMロールを作成
+   - 信頼されたエンティティタイプ: 「Web ID プロバイダー」
+   - プロバイダー: `token.actions.githubusercontent.com`
+   - 条件: `StringEquals` で `token.actions.githubusercontent.com:sub` = `repo:<GitHubユーザー名>/<リポジトリ名>:ref:refs/heads/main`
+   - 権限: S3, CloudFront, Lambda など必要な最小限の権限ポリシーをアタッチ
+
+2. 作成したロールのARNをGitHubリポジトリのSecretsに登録
+   - `AWS_ROLE_ARN` という名前で登録
+
+3. CloudFrontのDistribution IDやLambda関数名もSecretsに登録
+   - 例: `STAGING_DISTRIBUTION_ID`, `PRODUCTION_DISTRIBUTION_ID`, `LAMBDA_FUNCTION_NAME` など
+
+4. GitHub Actionsワークフローで `aws-actions/configure-aws-credentials` の `role-to-assume` にこのARNを指定 
