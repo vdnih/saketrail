@@ -184,11 +184,18 @@ saketrail/
 
 ## ドキュメント
 
-- [アーキテクチャ設計](./docs/architecture/README.md)
-- [API仕様書](./docs/api/README.md)
-- [開発ガイドライン](./docs/guides/development.md)
-- [デプロイガイド](./docs/guides/deployment.md)
-- [トラブルシューティング](./docs/guides/troubleshooting.md)
+### 開発プロセス
+- [開発プロセスガイドライン](./docs/guides/development-process.md) - 開発の進め方、ドキュメント管理、MVPアプローチについて
+- [コーディング規約](./docs/guides/coding-standards.md) - コードの書き方、命名規則、レビュー基準
+- [テストガイドライン](./docs/guides/testing.md) - テスト方針、カバレッジ要件、テストの書き方
+
+### 設計ドキュメント
+- [アーキテクチャ設計](./docs/architecture/README.md) - システム全体の設計と構成
+- [API仕様書](./docs/api/README.md) - APIエンドポイントとデータモデルの定義
+
+### その他
+- [デプロイガイド](./docs/guides/deployment.md) - デプロイ手順と環境設定
+- [トラブルシューティング](./docs/guides/troubleshooting.md) - よくある問題と解決方法
 
 ## ライセンス
 

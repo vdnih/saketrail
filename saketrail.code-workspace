@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "infra"
+		},
+		{
+			"path": "lambda"
+		}
+	],
+	"settings": {}
+}

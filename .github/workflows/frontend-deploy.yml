@@ -1,0 +1,68 @@
+name: Frontend Deploy
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
+  release:
+    types: [created]
+
+env:
+  AWS_REGION: ap-northeast-1
+  STAGING_BUCKET: staging-saketrail-frontend
+  PRODUCTION_BUCKET: saketrail-frontend
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.2'
+          channel: 'stable'
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: flutter pub get
+
+      - name: Run tests
+        working-directory: ./frontend
+        run: flutter test
+
+      - name: Build web
+        working-directory: ./frontend
+        run: flutter build web --release
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Deploy to staging on main branch push
+      - name: Deploy to staging
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: ./frontend/build/web
+        run: |
+          aws s3 sync . s3://${{ env.STAGING_BUCKET }} --delete
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.STAGING_DISTRIBUTION_ID }} --paths "/*"
+
+      # Deploy to production on release
+      - name: Deploy to production
+        if: github.event_name == 'release'
+        working-directory: ./frontend/build/web
+        run: |
+          aws s3 sync . s3://${{ env.PRODUCTION_BUCKET }} --delete
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.PRODUCTION_DISTRIBUTION_ID }} --paths "/*" 
