@@ -2,7 +2,7 @@ domain: saketrail.vdnih.link
 certificate_arn: arn:aws:acm:us-east-1:597088033984:certificate/bf3f401f-6288-42c0-83df-90515bfeec80
 s3:
   frontend_bucket:
-    name: saketrail-frontend
+    name: production-saketrail-frontend
     error_document: index.html
     index_document: index.html
 
