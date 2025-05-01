@@ -58,6 +58,3 @@ cdk.context.json
 # Logs
 *.log
 logs/ 
-
-frontend/lib/amplifyconfiguration_dev.json
-frontend/lib/amplifyconfiguration_prod.json
