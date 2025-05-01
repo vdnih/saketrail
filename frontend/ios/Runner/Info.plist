@@ -45,5 +45,19 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Cognito Hosted UI用ディープリンク -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>saketrail</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>saketrail</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

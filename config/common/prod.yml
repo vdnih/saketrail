@@ -1,0 +1,11 @@
+# 本番環境共通設定
+environment: production
+domain: saketrail.com
+aws:
+  region: ap-northeast-1
+  account_id: "${AWS_ACCOUNT_ID}"  # 環境変数から取得
+
+tags:
+  Environment: production
+  Project: saketrail
+  ManagedBy: cdk 

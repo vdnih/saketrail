@@ -3,6 +3,7 @@ import os
 import yaml
 from aws_cdk import App, Environment
 from saketrail_cdk.stacks.frontend_stack import FrontendStack
+from saketrail_cdk.stacks.auth_stack import AuthStack
 
 app = App()
 
@@ -21,6 +22,15 @@ env = Environment(
     region=os.getenv("CDK_DEFAULT_REGION", "ap-northeast-1")
 )
 
+# AuthStack (dev)
+AuthStack(
+    app,
+    "SakeTrailAuthDev",
+    environment="dev",
+    env=env,
+)
+
+# FrontendStack (dev)
 FrontendStack(
     app,
     "SakeTrailFrontendDev",
@@ -30,6 +40,15 @@ FrontendStack(
     env=env,
 )
 
+# AuthStack (prod)
+AuthStack(
+    app,
+    "SakeTrailAuthProduction",
+    environment="production",
+    env=env,
+)
+
+# FrontendStack (prod)
 FrontendStack(
     app,
     "SakeTrailFrontendProduction",
