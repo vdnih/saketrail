@@ -173,4 +173,45 @@ feat: ユーザー登録機能の追加
 2. **バックエンド**
    - クエリの最適化
    - キャッシュの活用
-   - 非同期処理の活用 
+   - 非同期処理の活用
+
+## フロントエンド（Flutter）テスト方針
+
+### 1. テストの基本方針
+- Flutterアプリのテストは「ユニットテスト」「Widgetテスト」「統合テスト」に分類する。
+- Web依存のコード（dart:html等）はDart VM上のテストから除外し、Webテスト環境でのみ実行する。
+- ロジックやUIのうち、Web依存のない部分は積極的にテストを作成する。
+
+### 2. ユニットテスト
+- Dartの純粋な関数やモデルクラス、ビジネスロジックはユニットテストで検証する。
+- 依存関係のあるクラスはモック化してテストする。
+
+### 3. Widgetテスト
+- 認証状態やWeb依存のないWidget（例: HomeScreen, LoginScreen）はWidgetテストでUI表示や動作を検証する。
+- 例：トップページが正しく表示されること、ログインボタンが表示されること等。
+- Widgetテストでは、必要に応じて依存サービス（例: AuthService）をモック化する。
+
+### 4. Web依存部分のテスト
+- dart:htmlやwindow等のWeb APIを利用する部分は、Dart VM上のテストではエラーとなるため、通常のテストから除外する。
+- Web依存のWidgetやロジックは、flutter test --platform=chrome等のWebテスト環境でのみ実行する。
+- 依存部分はインターフェース化・モック化し、テストしやすい設計とする。
+
+### 5. テスト設計の推奨事項
+- テストしやすい設計（依存性注入、インターフェース分離）を心がける。
+- テスト対象外のコードは、テストから明示的に除外する（例: 空のmain()関数のみ残す）。
+- テストコードもリファクタ・レビューの対象とする。
+
+### 6. 参考例
+```dart
+// HomeScreenのWidgetテスト例
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:saketrail/home_screen.dart';
+
+void main() {
+  testWidgets('HomeScreenが表示される', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    expect(find.text('ホーム'), findsOneWidget); // 例: ホーム画面に「ホーム」というテキストがある場合
+  });
+}
+``` 

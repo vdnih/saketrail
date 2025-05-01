@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'auth_service.dart';
 import 'home_screen.dart';
+import 'login_screen.dart';
 import 'dart:html' as html;
 
 Future<AuthService> getAuthService() async {
@@ -116,24 +117,6 @@ class LoadingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(body: Center(child: CircularProgressIndicator()));
-  }
-}
-
-class LoginScreen extends StatelessWidget {
-  final Future<void> Function() onLogin;
-  const LoginScreen({super.key, required this.onLogin});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('ログイン')),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: onLogin,
-          child: const Text('Cognitoでログイン'),
-        ),
-      ),
-    );
   }
 }
 
