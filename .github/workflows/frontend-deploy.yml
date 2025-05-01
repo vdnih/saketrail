@@ -41,6 +41,10 @@ jobs:
         working-directory: ./frontend
         run: flutter test
 
+      - name: Overwrite config.json with production config
+        working-directory: ./frontend
+        run: cp assets/config/config.prod.json assets/config/config.json
+
       - name: Build web
         working-directory: ./frontend
         run: flutter build web --release

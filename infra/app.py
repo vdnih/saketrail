@@ -8,7 +8,7 @@ from saketrail_cdk.stacks.auth_stack import AuthStack
 app = App()
 
 def load_config(env_name):
-    config_path = os.path.join(os.path.dirname(__file__), f'../config/{env_name}/frontend.yml')
+    config_path = os.path.join(os.path.dirname(__file__), f'../config/{env_name}.yml')
     with open(config_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
 
@@ -35,8 +35,8 @@ FrontendStack(
     app,
     "SakeTrailFrontendDev",
     environment="dev",
-    domain_name=config_dev["domain"],
-    certificate_arn=config_dev["certificate_arn"],
+    domain_name=config_dev["frontend"]["domain"],
+    certificate_arn=config_dev["frontend"]["certificate_arn"],
     env=env,
 )
 
@@ -53,8 +53,8 @@ FrontendStack(
     app,
     "SakeTrailFrontendProduction",
     environment="production",
-    domain_name=config_prod["domain"],
-    certificate_arn=config_prod["certificate_arn"],
+    domain_name=config_prod["frontend"]["domain"],
+    certificate_arn=config_prod["frontend"]["certificate_arn"],
     env=env,
 )
 

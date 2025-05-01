@@ -9,6 +9,8 @@ from aws_cdk import (
 )
 from constructs import Construct
 from typing import Optional
+import yaml
+import os
 
 
 class FrontendStack(Stack):
@@ -40,6 +42,8 @@ class FrontendStack(Stack):
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             removal_policy=RemovalPolicy.RETAIN,
             encryption=s3.BucketEncryption.S3_MANAGED,
+            website_index_document="index.html",
+            website_error_document="index.html",
         )
 
         # Create CloudFront distribution
@@ -47,7 +51,7 @@ class FrontendStack(Stack):
             self,
             "Distribution",
             default_behavior=cloudfront.BehaviorOptions(
-                origin=origins.S3Origin(website_bucket),
+                origin=origins.S3StaticWebsiteOrigin(website_bucket),
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
             ),
@@ -83,4 +87,15 @@ class FrontendStack(Stack):
             "BucketName",
             value=website_bucket.bucket_name,
             description="Website Bucket Name",
-        ) 
+        )
+
+def load_config(environment):
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    if environment == 'production':
+        env_name = 'prod'
+    else:
+        env_name = environment
+    config_path = os.path.join(base_dir, 'config', f'{env_name}.yml')
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config = yaml.safe_load(f)
+    return config 

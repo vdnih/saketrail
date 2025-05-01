@@ -58,3 +58,6 @@ cdk.context.json
 # Logs
 *.log
 logs/ 
+
+# 手元用のメモ
+*.txt

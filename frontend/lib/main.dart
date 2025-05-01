@@ -1,85 +1,127 @@
 import 'package:flutter/material.dart';
-import 'package:amplify_flutter/amplify_flutter.dart';
-import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
-import 'package:amplify_authenticator/amplify_authenticator.dart';
-import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'auth_service.dart';
 import 'home_screen.dart';
+import 'dart:html' as html;
+
+Future<AuthService> getAuthService() async {
+  if (kIsWeb) {
+    return await WebAuthService.create();
+  } else {
+    throw UnimplementedError('モバイル認証は未実装です');
+  }
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final amplify = Amplify;
-  final auth = AmplifyAuthCognito();
-  if (!amplify.isConfigured) {
-    // 環境によって設定ファイルを切り替え
-    final configAsset =
-        kReleaseMode
-            ? 'lib/amplifyconfiguration_prod.json'
-            : 'lib/amplifyconfiguration_dev.json';
-    final configString = await rootBundle.loadString(configAsset);
-    await amplify.addPlugin(auth);
-    await amplify.configure(configString);
-  }
-  runApp(const MyApp());
+  final authService = await getAuthService();
+  runApp(MyApp(authService: authService));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+  final AuthService authService;
+  const MyApp({super.key, required this.authService});
 
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  final AuthService _authService = AuthService();
+  late final AuthService _authService;
   bool _isSignedIn = false;
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
+    _authService = widget.authService;
     _checkAuth();
+    _setupCallbackListener();
+  }
+
+  void _setupCallbackListener() {
+    html.window.onMessage.listen((event) async {
+      if (event.data is String && event.data.startsWith('http')) {
+        final uri = Uri.parse(event.data);
+        final code = uri.queryParameters['code'];
+        if (code != null) {
+          final result = await _authService.handleCallback(code);
+          if (result) {
+            setState(() {
+              _isSignedIn = true;
+              _loading = false;
+            });
+            // コールバック成功後にホーム画面に遷移
+            if (mounted) {
+              Navigator.pushReplacementNamed(context, '/home');
+            }
+          }
+        }
+      }
+    });
   }
 
   Future<void> _checkAuth() async {
     final signedIn = await _authService.isSignedIn();
-    setState(() {
-      _isSignedIn = signedIn;
-      _loading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isSignedIn = signedIn;
+        _loading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const MaterialApp(
-        home: Scaffold(body: Center(child: CircularProgressIndicator())),
-      );
-    }
     return MaterialApp(
-      home:
-          _isSignedIn
-              ? const HomeScreen()
-              : LoginScreen(
-                onLogin: () async {
-                  final result = await _authService.signInWithCognito();
-                  if (result) {
-                    setState(() {
-                      _isSignedIn = true;
-                    });
-                  }
-                },
-              ),
+      title: 'SakeTrail',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      initialRoute: '/',
+      routes: {
+        '/':
+            (context) =>
+                _loading
+                    ? const LoadingScreen()
+                    : _isSignedIn
+                    ? const HomeScreen()
+                    : LoginScreen(onLogin: _handleLogin),
+        '/login': (context) => LoginScreen(onLogin: _handleLogin),
+        '/home':
+            (context) =>
+                AuthGuard(child: const HomeScreen(), authService: _authService),
+        '/callback': (context) => const CallbackHandlerScreen(),
+      },
     );
+  }
+
+  Future<void> _handleLogin() async {
+    final result = await _authService.signIn();
+    if (result && mounted) {
+      setState(() {
+        _isSignedIn = true;
+      });
+      Navigator.pushReplacementNamed(context, '/home');
+    }
+  }
+}
+
+class LoadingScreen extends StatelessWidget {
+  const LoadingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
 
 class LoginScreen extends StatelessWidget {
   final Future<void> Function() onLogin;
-  const LoginScreen({Key? key, required this.onLogin}) : super(key: key);
+  const LoginScreen({super.key, required this.onLogin});
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +133,46 @@ class LoginScreen extends StatelessWidget {
           child: const Text('Cognitoでログイン'),
         ),
       ),
+    );
+  }
+}
+
+class CallbackHandlerScreen extends StatelessWidget {
+  const CallbackHandlerScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: Text('認証処理中...')));
+  }
+}
+
+class AuthGuard extends StatelessWidget {
+  final Widget child;
+  final AuthService authService;
+
+  const AuthGuard({super.key, required this.child, required this.authService});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: authService.isSignedIn(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.data == true) {
+          return child;
+        } else {
+          Future.microtask(
+            () => Navigator.pushReplacementNamed(context, '/login'),
+          );
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+      },
     );
   }
 }

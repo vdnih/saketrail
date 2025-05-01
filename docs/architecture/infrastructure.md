@@ -48,12 +48,24 @@ CDKアプリケーションの主要な設定ファイルで、以下の設定�
 
 ### 3. デプロイメント環境
 
-プロジェクトは以下の環境を持ちます：
-- Development (dev)
-- Staging (staging)
-- Production (prod)
+本プロジェクトでは、以下の環境を想定しています。
 
-各環境は独立したAWSアカウントにデプロイされ、環境固有の設定を持ちます。
+- **Development (dev)**
+  - 主にPCローカルでフロントエンド開発を行う
+  - CognitoやLambdaなどAWSサービスはdev用リソースをAWS上に構築して利用
+  - フロントエンドはローカルで動かすことが多いが、必要に応じてAWS上にdev用バケット等を作成する
+  - リソース名やタグ（例: `Environment: dev`）でproductionと区別
+
+- **Staging (staging)**
+  - 今後必要になった場合に追加予定
+  - 現状は未運用
+
+- **Production (prod)**
+  - AWS上に本番用リソースを構築
+  - devと同じAWSアカウント内で、リソース名やタグ（例: `Environment: production`）で区別
+
+> ※ devとprodは**同じAWSアカウント内で運用**し、リソース名やタグで明確に区別します。
+> アカウント分離は大規模化した場合に検討します。
 
 ### 4. スタック構成と作成リソース
 
@@ -199,135 +211,64 @@ CDKアプリケーションの主要な設定ファイルで、以下の設定�
 
 #### 7.1 設定ファイルの構成
 
-プロジェクトの設定は以下の階層構造で管理します：
+プロジェクトの設定は以下のように、環境ごとに1ファイル（dev.yml, prod.yml）で管理します：
 
 ```text
 saketrail/
 ├── config/
-│   ├── common/           # 環境共通の設定
-│   │   ├── dev.yml
-│   │   ├── staging.yml
-│   │   └── prod.yml
-│   └── secrets/         # 機密情報（Git管理外）
-├── frontend/
-│   └── config/         # フロントエンド固有の設定
-├── lambda/
-│   └── config/         # バックエンド固有の設定
-└── infra/
-    └── config/         # インフラ固有の設定
-        ├── dev/
-        │   ├── frontend.yml
-        │   └── backend.yml
-        ├── staging/
-        └── prod/
+│   ├── dev.yml
+│   └── prod.yml
 ```
 
-#### 7.2 設定ファイルの種類と役割
+- それぞれのYAMLに aws, tags, frontend, cognito など全ての設定を用途ごとにセクション分けして記載します。
+- どの環境の値も「1ファイルだけ見ればOK」です。
 
-1. **共通設定（`config/common/*.yml`）**
-   ```yaml
-   # 開発環境共通設定（dev.yml）
-   environment: dev
-   domain: dev.saketrail.com
-   aws:
-     region: ap-northeast-1
-     account_id: "${AWS_ACCOUNT_ID}"  # 環境変数から取得
-   
-   # 共通タグ
-   tags:
-     Environment: dev
-     Project: saketrail
-     ManagedBy: cdk
-   ```
-   - 環境固有の基本設定
-   - AWSアカウント情報
-   - ドメイン設定
-   - 共通タグ
+#### 7.2 設定ファイルの例
 
-2. **インフラ設定（`infra/config/*/*.yml`）**
-   ```yaml
-   # フロントエンドインフラ設定（frontend.yml）
-   s3:
-     frontend_bucket:
-       name: dev-saketrail-frontend
-       error_document: index.html
-       index_document: index.html
-   
-   cloudfront:
-     price_class: PRICE_CLASS_200
-     minimum_protocol_version: TLSv1.2_2021
-   ```
-   - AWSリソース固有の設定
-   - インフラストラクチャのパラメータ
-   - リソース命名規則
+```yaml
+# config/dev.yml
+environment: dev
+aws:
+  region: ap-northeast-1
+  account_id: "${AWS_ACCOUNT_ID}"
+tags:
+  Environment: dev
+  Project: saketrail
+  ManagedBy: cdk
+frontend:
+  domain: dev.saketrail.vdnih.link
+  certificate_arn: arn:aws:acm:us-east-1:597088033984:certificate/02bed00a-8836-4573-b591-110c779ee347
+  s3:
+    frontend_bucket:
+      name: dev-saketrail-frontend
+      error_document: index.html
+      index_document: index.html
+  cloudfront:
+    price_class: PRICE_CLASS_200
+    minimum_protocol_version: TLSv1.2_2021
+cognito:
+  user_pool_domain: saketrail-dev.auth.ap-northeast-1.amazoncognito.com
+  user_pool_domain_prefix: saketrail-dev
+  user_pool_client_id: saketrail-dev
+  user_pool_redirect_uri: http://localhost:8080/callback
+```
 
-3. **アプリケーション設定（`frontend/config/*.yml`, `lambda/config/*.yml`）**
-   - アプリケーション固有のパラメータ
-   - 機能フラグ
-   - UI設定
-   - APIエンドポイント設定
+#### 7.3 設定値の参照方法
 
-4. **機密情報（`config/secrets/*.yml`）**
-   - APIキー
-   - シークレットキー
-   - 認証情報
-   - ※ Git管理外で、AWS Systems Manager Parameter Storeで管理
-
-#### 7.3 設定の優先順位
-
-設定値の解決は以下の優先順位で行われます：
-
-1. 環境変数（最優先）
-2. シークレット設定（`config/secrets/*.yml`）
-3. アプリケーション設定（`frontend/config/*.yml`, `lambda/config/*.yml`）
-4. インフラ設定（`infra/config/*/*.yml`）
-5. 共通設定（`config/common/*.yml`）
-6. コード内のデフォルト値（最低優先）
-
-#### 7.4 設定値の参照方法
-
-CDKスタック内での設定値の参照例：
+- CDKやアプリケーションからは、`config/dev.yml` または `config/prod.yml` を直接読み込んで利用します。
+- 例：
 
 ```python
-def _load_config(self, env_name: str) -> Dict:
-    """
-    共通設定とインフラ設定を読み込んで結合します
-    """
-    # 共通設定の読み込み
-    common_config_path = os.path.join('config', 'common', f'{env_name}.yml')
-    with open(common_config_path, 'r') as f:
-        common_config = yaml.safe_load(f)
-
-    # インフラ設定の読み込み
-    infra_config_path = os.path.join('infra', 'config', env_name, 'frontend.yml')
-    with open(infra_config_path, 'r') as f:
-        infra_config = yaml.safe_load(f)
-
-    return {
-        'common': common_config,
-        'infra': infra_config
-    }
+with open('config/dev.yml', 'r') as f:
+    config = yaml.safe_load(f)
+# config['frontend']['domain'] などで参照
 ```
 
-#### 7.5 設定管理のベストプラクティス
+#### 7.4 ベストプラクティス
 
-1. **環境分離**
-   - 環境ごとに明確に分離された設定ファイル
-   - 環境固有の値は共通設定で一元管理
-
-2. **セキュリティ**
-   - 機密情報は必ずParameter Storeで管理
-   - 環境変数による上書きを許可
-
-3. **命名規則**
-   - 環境名をプレフィックスとして使用
-   - リソース種別を含む明確な名前付け
-   - キャメルケースまたはスネークケースの一貫した使用
-
-4. **バージョン管理**
-   - 設定変更の履歴を追跡可能に
-   - レビュープロセスの適用
-   - 変更の影響範囲を文書化
+- 設定値を変更したい場合は、必ず該当環境のYAMLファイルのみを編集してください。
+- 機密情報は `config/secrets/` など別管理とし、Git管理外に置くことを推奨します。
+- フロントエンド用のJSON（`frontend/assets/config/config.json` など）は、必要に応じて手動で同期してください。
 
 ### 8. デプロイメントプロセス
 

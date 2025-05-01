@@ -16,9 +16,10 @@ SakeTrailは、お酒との素敵な出会いと思い出を記録するため�
 
 ### フロントエンド
 - Flutter (Dart)
-  - クロスプラットフォーム対応（iOS/Android）
+  - 現状はWeb対応（将来的にiOS/Android対応予定）
   - Material Design
-  - カメラ統合とAI画像認識
+  - OAuth2.0/Cognito認証フロー（oauth2_client利用）
+  - Web専用実装（flutter_web_auth_2利用）
 
 ### バックエンド
 - AWS サーバーレス構成
@@ -26,6 +27,7 @@ SakeTrailは、お酒との素敵な出会いと思い出を記録するため�
   - AWS Lambda (Python)
   - Amazon DynamoDB
   - Amazon S3（画像ストレージ）
+  - Amazon Cognito（認証）
 - AI/ML
   - OpenAI API (GPT-4 Vision)
   - 画像認識と商品情報の抽出
@@ -34,7 +36,7 @@ SakeTrailは、お酒との素敵な出会いと思い出を記録するため�
 ### インフラストラクチャ
 - AWS CDK (Python)
   - Infrastructure as Code
-  - 環境分離（開発/ステージング/本番）
+  - 環境分離（開発/本番）
   - CI/CD パイプライン
 
 ## 必要要件
@@ -142,7 +144,7 @@ uvicorn main:app --reload
 #### フロントエンドの起動
 ```bash
 cd frontend
-flutter run
+flutter run -d chrome --web-port=8080
 ```
 
 ## トラブルシューティング
@@ -153,32 +155,31 @@ flutter run
 
 ```text
 saketrail/
-├── frontend/          # Flutterモバイルアプリケーション
+├── frontend/          # Flutterウェブアプリケーション
 │   ├── lib/          # Dartソースコード
-│   ├── assets/       # 画像等の静的ファイル
+│   │   ├── main.dart           # アプリケーションエントリーポイント
+│   │   ├── auth_service.dart   # 認証サービス実装
+│   │   └── home_screen.dart    # ホーム画面
+│   ├── assets/       # 画像や設定ファイル等の静的ファイル
+│   │   └── config/   # 環境ごとの設定ファイル（config.json）
+│   ├── web/          # Webアプリ固有のファイル（index.html, callback.html等）
 │   └── test/         # テストコード
 ├── infra/            # AWS CDKによるインフラ定義
 │   ├── pyproject.toml    # Poetry依存関係定義（CDK用）
 │   ├── poetry.lock      # Poetry依存関係ロックファイル
-│   ├── lib/          # CDKスタック定義
-│   │   ├── storage/  # ストレージ関連（DynamoDB, S3）
-│   │   ├── auth/     # 認証関連（Cognito）
-│   │   ├── api/      # API関連（API Gateway, Lambda）
-│   │   └── ai/       # AI関連（OpenAI統合）
-│   ├── bin/          # CDKアプリケーションエントリーポイント
-│   └── tests/        # CDKのテストコード
-├── lambda/           # Lambda関数のソースコード
-│   ├── pyproject.toml    # Poetry依存関係定義（Lambda用）
-│   ├── poetry.lock      # Poetry依存関係ロックファイル
-│   ├── src/         # Lambda関数の実装
-│   │   ├── auth/    # 認証関連の関数
-│   │   ├── sake/    # 日本酒関連の関数
-│   │   └── ai/      # AI関連の関数
-│   └── tests/       # Lambdaのテストコード
+│   ├── app.py           # CDKアプリケーションエントリーポイント
+│   └── saketrail_cdk/   # CDKスタック定義
+│       └── stacks/      # 各種スタック（auth_stack.py, frontend_stack.py等）
+├── config/           # プロジェクト全体の設定ファイル
+│   ├── dev.yml       # 開発環境の設定
+│   └── prod.yml      # 本番環境の設定
 ├── docs/             # プロジェクトドキュメント
 │   ├── architecture/ # アーキテクチャ設計書
-│   ├── api/         # API仕様書
-│   └── guides/      # 各種ガイドライン
+│   ├── guides/      # 各種ガイドライン
+│   │   ├── authentication-flow.md  # 認証フロー実装ガイド
+│   │   ├── coding-standards.md     # コーディング規約
+│   │   └── development-process.md  # 開発プロセスガイドライン
+│   └── api-spec.md   # API仕様書
 └── README.md         # プロジェクト概要
 ```
 
@@ -192,6 +193,7 @@ saketrail/
 ### 設計ドキュメント
 - [アーキテクチャ設計](./docs/architecture/README.md) - システム全体の設計と構成
 - [API仕様書](./docs/api/README.md) - APIエンドポイントとデータモデルの定義
+- [認証フロー実装ガイド](./docs/guides/authentication-flow.md) - OAuth2.0/Cognito認証の実装方法
 
 ### その他
 - [デプロイガイド](./docs/guides/deployment.md) - デプロイ手順と環境設定

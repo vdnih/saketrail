@@ -10,20 +10,16 @@ import yaml
 import os
 
 def load_config(environment):
-    # base_dir = saketrail ディレクトリ
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) )
-    env_dir = environment
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     if environment == 'production':
-        env_dir = 'prod'
-    common_path = os.path.join(base_dir, 'config', 'common', f'{env_dir}.yml')
-    infra_path = os.path.join(base_dir, 'config', env_dir, 'frontend.yml')
-    print("common_path:", common_path)
-    print("infra_path:", infra_path)
-    with open(common_path, 'r', encoding='utf-8') as f:
-        common = yaml.safe_load(f)
-    with open(infra_path, 'r', encoding='utf-8') as f:
-        infra = yaml.safe_load(f)
-    return {'common': common, 'infra': infra}
+        env_name = 'prod'
+    else:
+        env_name = environment
+    config_path = os.path.join(base_dir, 'config', f'{env_name}.yml')
+    print("config_path:", config_path)
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config = yaml.safe_load(f)
+    return config
 
 class AuthStack(Stack):
     def __init__(
@@ -37,10 +33,11 @@ class AuthStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         config = load_config(environment)
-        domain_prefix = environment
-        hosted_ui_domain = f"{domain_prefix}-saketrail"
-        web_callback_url = f"https://{config['common']['domain']}/callback"
-        mobile_callback_url = "saketrail://callback"
+        cognito_config = config['cognito']
+        user_pool_domain = cognito_config['user_pool_domain']
+        user_pool_client_id = cognito_config['user_pool_client_id']
+        user_pool_redirect_uri = cognito_config['user_pool_redirect_uri']
+        user_pool_domain_prefix = cognito_config['user_pool_domain_prefix']
 
         # User Pool
         user_pool = cognito.UserPool(
@@ -75,7 +72,7 @@ class AuthStack(Stack):
         user_pool.add_domain(
             "CognitoDomain",
             cognito_domain=cognito.CognitoDomainOptions(
-                domain_prefix=hosted_ui_domain
+                domain_prefix=user_pool_domain_prefix
             )
         )
 
@@ -89,11 +86,10 @@ class AuthStack(Stack):
             generate_secret=False,
             o_auth=cognito.OAuthSettings(
                 callback_urls=[
-                    mobile_callback_url,
-                    web_callback_url,
+                    user_pool_redirect_uri,
                 ],
                 logout_urls=[
-                    f"https://{config['common']['domain']}/logout",
+                    f"https://{config['frontend']['domain']}/logout",
                 ],
                 flows=cognito.OAuthFlows(
                     authorization_code_grant=True

@@ -1,0 +1,5 @@
+{
+  "user_pool_domain": "saketrail.auth.ap-northeast-1.amazoncognito.com",
+  "user_pool_client_id": "saketrail",
+  "user_pool_redirect_uri": "https://saketrail.vdnih.link/callback.html"
+} 

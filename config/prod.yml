@@ -1,0 +1,24 @@
+environment: production
+aws:
+  region: ap-northeast-1
+  account_id: "${AWS_ACCOUNT_ID}"
+tags:
+  Environment: production
+  Project: saketrail
+  ManagedBy: cdk
+frontend:
+  domain: saketrail.vdnih.link
+  certificate_arn: arn:aws:acm:us-east-1:597088033984:certificate/bf3f401f-6288-42c0-83df-90515bfeec80
+  s3:
+    frontend_bucket:
+      name: production-saketrail-frontend
+      error_document: index.html
+      index_document: index.html
+  cloudfront:
+    price_class: PRICE_CLASS_200
+    minimum_protocol_version: TLSv1.2_2021
+cognito:
+  user_pool_domain: saketrail.auth.ap-northeast-1.amazoncognito.com
+  user_pool_domain_prefix: saketrail
+  user_pool_client_id: saketrail
+  user_pool_redirect_uri: https://saketrail.vdnih.link/callback.html 
