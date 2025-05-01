@@ -6,6 +6,7 @@ from aws_cdk import (
     aws_certificatemanager as acm,
     RemovalPolicy,
     CfnOutput,
+    aws_iam as iam,
 )
 from constructs import Construct
 from typing import Optional
@@ -26,6 +27,10 @@ class FrontendStack(Stack):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        # 開発環境(dev)の場合は何も作成しない
+        if environment in ["dev", "development"]:
+            return
+
         # Create subdomain based on environment
         subdomain = f"staging.{domain_name}" if environment == "staging" else domain_name
 
@@ -42,44 +47,82 @@ class FrontendStack(Stack):
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             removal_policy=RemovalPolicy.RETAIN,
             encryption=s3.BucketEncryption.S3_MANAGED,
-            website_index_document="index.html",
-            website_error_document="index.html",
         )
 
-        # Create CloudFront distribution
-        distribution = cloudfront.Distribution(
+        # OACの作成
+        oac = cloudfront.CfnOriginAccessControl(
+            self,
+            "OAC",
+            origin_access_control_config=cloudfront.CfnOriginAccessControl.OriginAccessControlConfigProperty(
+                name=f"{construct_id}-oac",
+                origin_access_control_origin_type="s3",
+                signing_behavior="always",
+                signing_protocol="sigv4",
+                description="OAC for CloudFront to access S3"
+            )
+        )
+
+        # CloudFront Distribution
+        distribution = cloudfront.CfnDistribution(
             self,
             "Distribution",
-            default_behavior=cloudfront.BehaviorOptions(
-                origin=origins.S3StaticWebsiteOrigin(website_bucket),
-                viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-                cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
-            ),
-            domain_names=[subdomain],
-            certificate=certificate,
-            default_root_object="index.html",
-            error_responses=[
-                cloudfront.ErrorResponse(
-                    http_status=404,
-                    response_http_status=200,
-                    response_page_path="/index.html",
-                )
-            ],
+            distribution_config=cloudfront.CfnDistribution.DistributionConfigProperty(
+                enabled=True,
+                default_root_object="index.html",
+                aliases=[subdomain],
+                viewer_certificate=cloudfront.CfnDistribution.ViewerCertificateProperty(
+                    acm_certificate_arn=certificate_arn,
+                    ssl_support_method="sni-only"
+                ),
+                origins=[
+                    cloudfront.CfnDistribution.OriginProperty(
+                        domain_name=website_bucket.bucket_regional_domain_name,
+                        id="S3Origin",
+                        s3_origin_config=cloudfront.CfnDistribution.S3OriginConfigProperty(
+                            origin_access_identity=""
+                        ),
+                        origin_access_control_id=oac.ref,
+                    )
+                ],
+                default_cache_behavior=cloudfront.CfnDistribution.DefaultCacheBehaviorProperty(
+                    target_origin_id="S3Origin",
+                    viewer_protocol_policy="redirect-to-https",
+                    allowed_methods=["GET", "HEAD", "OPTIONS"],
+                    cached_methods=["GET", "HEAD"],
+                    compress=True,
+                    cache_policy_id=cloudfront.CachePolicy.CACHING_OPTIMIZED.cache_policy_id,
+                ),
+                custom_error_responses=[
+                    cloudfront.CfnDistribution.CustomErrorResponseProperty(
+                        error_code=404,
+                        response_code=200,
+                        response_page_path="/index.html"
+                    )
+                ]
+            )
+        )
+
+        # S3バケットポリシーにOACからのアクセスのみ許可
+        website_bucket.add_to_resource_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                principals=[iam.ServicePrincipal("cloudfront.amazonaws.com")],
+                actions=["s3:GetObject"],
+                resources=[f"{website_bucket.bucket_arn}/*"],
+                conditions={
+                    "StringEquals": {
+                        "AWS:SourceArn": f"arn:aws:cloudfront::{self.account}:distribution/{distribution.ref}"
+                    }
+                }
+            )
         )
 
         # Output the distribution ID, domain name, bucket name, and ACM validation info
         CfnOutput(
             self,
             "DistributionId",
-            value=distribution.distribution_id,
+            value=distribution.ref,
             description="CloudFront Distribution ID",
-        )
-
-        CfnOutput(
-            self,
-            "DistributionDomainName",
-            value=distribution.distribution_domain_name,
-            description="CloudFront Distribution Domain Name",
         )
 
         CfnOutput(
