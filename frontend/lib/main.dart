@@ -9,11 +9,7 @@ import 'dart:html' as html;
 import 'ai_label_screen.dart';
 
 Future<AuthService> getAuthService() async {
-  if (kIsWeb) {
-    return await WebAuthService.create();
-  } else {
-    throw UnimplementedError('モバイル認証は未実装です');
-  }
+  return await AuthService.create();
 }
 
 void main() {
