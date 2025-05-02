@@ -163,6 +163,14 @@ feat: ユーザー登録機能の追加
 4. **実装ガイド**
    - [認証フロー実装ガイド](guides/authentication-flow.md) - AWS Cognitoを使用した認証フローの詳細な実装方法
 
+#### API管理運用ルール
+
+- APIリソース・エンドポイント・統合・認証の定義は**CDKで一元管理**します。
+    - Lambda統合やCognito認証（Authorizer）もCDKで定義します
+    - OpenAPI仕様書はCDKで参照せず、API設計・入出力定義・ドキュメント・SDK生成用途に限定します
+- APIの追加・変更はOpenAPI仕様書（docs/openapi.yaml）とCDKの両方を編集し、設計と実装の整合性を保つ運用とします
+- OpenAPI仕様書にはAWS固有の拡張（x-amazon-apigateway-integration等）は記述しません
+
 ### 9. パフォーマンス最適化
 
 1. **フロントエンド**

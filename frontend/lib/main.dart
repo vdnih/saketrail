@@ -6,6 +6,7 @@ import 'auth_service.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 import 'dart:html' as html;
+import 'ai_label_screen.dart';
 
 Future<AuthService> getAuthService() async {
   if (kIsWeb) {
@@ -15,10 +16,25 @@ Future<AuthService> getAuthService() async {
   }
 }
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  final authService = await getAuthService();
-  runApp(MyApp(authService: authService));
+void main() {
+  runApp(const AppRoot());
+}
+
+class AppRoot extends StatelessWidget {
+  const AppRoot({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<AuthService>(
+      future: getAuthService(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const MaterialApp(home: LoadingScreen());
+        }
+        return MyApp(authService: snapshot.data!);
+      },
+    );
+  }
 }
 
 class MyApp extends StatefulWidget {
@@ -89,13 +105,16 @@ class _MyAppState extends State<MyApp> {
                 _loading
                     ? const LoadingScreen()
                     : _isSignedIn
-                    ? const HomeScreen()
+                    ? HomeScreen(authService: _authService)
                     : LoginScreen(onLogin: _handleLogin),
         '/login': (context) => LoginScreen(onLogin: _handleLogin),
         '/home':
-            (context) =>
-                AuthGuard(child: const HomeScreen(), authService: _authService),
+            (context) => AuthGuard(
+              child: HomeScreen(authService: _authService),
+              authService: _authService,
+            ),
         '/callback': (context) => const CallbackHandlerScreen(),
+        '/ai-label': (context) => AiLabelScreen(authService: _authService),
       },
     );
   }

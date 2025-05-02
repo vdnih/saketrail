@@ -1,0 +1,135 @@
+openapi: 3.0.3
+info:
+  title: SakeTrail API
+  version: '1.0.0'
+  description: |
+    SakeTrail APIは、AIラベル認識のためのPresigned URL払い出しAPIを提供しています。
+    本APIは認証必須です。AWS Cognito Hosted UIでログインし、Bearerトークン（JWT）を付与してください。
+servers:
+  - url: https://api.saketrail.vdnih.link
+    description: 本番環境
+  - url: https://api-dev.saketrail.vdnih.link
+    description: 開発環境
+
+paths:
+  /ai/recognize-label/presigned-url:
+    post:
+      summary: 画像アップロード用Presigned URL取得
+      description: |
+        画像アップロード用のS3 Presigned URLを払い出します。
+        認証必須。リクエスト時は `Authorization: Bearer <JWT>` ヘッダーを付与してください。
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content_type
+              properties:
+                content_type:
+                  type: string
+                  description: |
+                    アップロードする画像のMIMEタイプ（例: image/jpeg, image/png）
+                    許可されるMIMEタイプ: image/jpeg, image/png, image/webp, image/gif
+                    上記以外のMIMEタイプの場合は400エラー
+      responses:
+        '200':
+          description: Presigned URL払い出し
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  upload_url:
+                    type: string
+                  job_id:
+                    type: string
+        '401':
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+  /ai/recognize-label/{job_id}:
+    get:
+      summary: ラベル認識判別結果取得
+      parameters:
+        - in: path
+          name: job_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 判別結果取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIJobResult'
+        'default':
+          description: エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AIJobResult:
+      type: object
+      properties:
+        job_id:
+          type: string
+        status:
+          type: string
+          enum: [running, success, failed]
+        type:
+          type: string
+        result:
+          type: object
+          properties:
+            name:
+              type: string
+            brewery:
+              type: string
+            specs:
+              type: object
+              properties:
+                alcohol_percentage:
+                  type: number
+            image_url:
+              type: string
+            confidence:
+              type: number
+        created_at:
+          type: string
+        updated_at:
+          type: string
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object 

@@ -320,3 +320,19 @@ cloudfront:
 2. 証明書ARNを `config/dev/frontend.yml` に記載
 3. CDKでS3/CloudFrontをデプロイ
 4. CloudFrontのドメイン名をRoute53のAレコード(ALIAS)に手動で登録 
+
+## API管理方針（OpenAPI仕様書とCDKの役割分担）
+
+本プロジェクトのAPI管理は以下の方針で運用します。
+
+- **OpenAPI仕様書（docs/openapi.yaml）はAPIの入出力定義・ドキュメント用途に限定**します。
+    - パス、メソッド、リクエスト/レスポンススキーマなどをYAMLで記述
+    - Lambda統合や認証方式などAWS固有の拡張（x-amazon-apigateway-integration等）は記述しません
+    - OpenAPI仕様書の編集はAPI設計・仕様変更の唯一の入口とし、SDK生成やドキュメント生成に活用します
+- **API Gateway/Lambda/認証（Cognito等）のインフラ構成はCDKで一元管理**します。
+    - CDKでAPI Gatewayのリソース・メソッド・Lambda統合・認証（Authorizer）を全て定義
+    - OpenAPI仕様書はCDKで参照せず、API設計のドキュメントとしてのみ利用します
+- **APIの追加・変更はOpenAPI仕様書とCDKの両方を編集し、設計と実装の整合性を保つ運用とします**
+- **OpenAPI仕様書はAWSとの統合を意識せず、APIの入出力定義・ドキュメント・SDK生成用途に特化します**
+
+> 詳細な運用ルールや記述例は [開発ガイドライン](../development-guidelines.md) も参照してください。 

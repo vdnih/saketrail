@@ -67,6 +67,7 @@ class AuthStack(Stack):
             mfa_second_factor=cognito.MfaSecondFactor(sms=True, otp=True),
             account_recovery=cognito.AccountRecovery.EMAIL_ONLY,
         )
+        self.user_pool = user_pool
 
         # Hosted UIドメイン
         user_pool.add_domain(
@@ -88,9 +89,7 @@ class AuthStack(Stack):
                 callback_urls=[
                     user_pool_redirect_uri,
                 ],
-                logout_urls=[
-                    f"https://{config['frontend']['domain']}/logout",
-                ],
+                logout_urls=[],
                 flows=cognito.OAuthFlows(
                     authorization_code_grant=True
                 ),
@@ -101,6 +100,7 @@ class AuthStack(Stack):
                 ],
             ),
         )
+        self.user_pool_client = user_pool_client
 
         # Identity Pool
         identity_pool = cognito.CfnIdentityPool(

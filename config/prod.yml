@@ -21,4 +21,10 @@ cognito:
   user_pool_domain: saketrail.auth.ap-northeast-1.amazoncognito.com
   user_pool_domain_prefix: saketrail
   user_pool_client_id: saketrail
-  user_pool_redirect_uri: https://saketrail.vdnih.link/callback.html 
+  user_pool_redirect_uri: https://saketrail.vdnih.link/callback.html
+api_gateway:
+  domain_name: api.saketrail.vdnih.link
+  certificate_arn: arn:aws:acm:ap-northeast-1:597088033984:certificate/fb2319c1-c37e-4f55-ac3a-01fc111bcf82
+ai_label_recognition:
+  s3_bucket: production-saketrail-ai-label-uploads
+  dynamodb_table: production-saketrail-ai-label-jobs 
