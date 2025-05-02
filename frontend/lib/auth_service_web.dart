@@ -12,6 +12,8 @@ abstract class AuthService {
   Future<bool> handleCallback(String code); // Web用
   Future<String?> getAccessToken();
   Future<bool> isSignedIn();
+
+  static Future<AuthService> create() async => await WebAuthService.create();
 }
 
 class WebAuthService implements AuthService {
